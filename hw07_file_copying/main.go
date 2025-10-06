@@ -2,21 +2,27 @@ package main
 
 import (
 	"flag"
+	"fmt"
 )
 
 var (
-	from, to      string
-	limit, offset int64
+	vFrom, vTo      string
+	vLimit, vOffset int64
+	vRewrite        bool
 )
 
 func init() {
-	flag.StringVar(&from, "from", "", "file to read from")
-	flag.StringVar(&to, "to", "", "file to write to")
-	flag.Int64Var(&limit, "limit", 0, "limit of bytes to copy")
-	flag.Int64Var(&offset, "offset", 0, "offset in input file")
+	flag.StringVar(&vFrom, "from", "", "file to read from")
+	flag.StringVar(&vTo, "to", "", "file to write to")
+	flag.Int64Var(&vLimit, "limit", 0, "limit of bytes to copy")
+	flag.Int64Var(&vOffset, "offset", 0, "offset in input file")
+	flag.BoolVar(&vRewrite, "rewrite", false, "rewrite file if exists ")
 }
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+
+	if err := Copy(vFrom, vTo, vOffset, vLimit, vRewrite); err != nil {
+		fmt.Println("Error:  ", err)
+	}
 }

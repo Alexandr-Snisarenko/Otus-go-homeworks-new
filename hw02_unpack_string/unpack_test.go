@@ -8,6 +8,12 @@ import (
 )
 
 func TestUnpack(t *testing.T) {
+	testStr := `test
+2
+er3
+
+ 2`
+
 	tests := []struct {
 		input    string
 		expected string
@@ -16,8 +22,17 @@ func TestUnpack(t *testing.T) {
 		{input: "abccd", expected: "abccd"},
 		{input: "", expected: ""},
 		{input: "aaa0b", expected: "aab"},
-		{input: "🙃0", expected: ""},
-		{input: "aaф0b", expected: "aab"},
+		{input: "  2  ", expected: "     "},
+		// non-printed symbols and escape symbols in string
+		{input: "aa2\n2\b3", expected: "aaa\n\n\b\b\b"},
+		{input: "aa2\\n2\\t3", expected: "aaa\\nn\\ttt"},
+		// encoded strings
+		{input: "\u65e53\u672c2\u8a9e", expected: "\u65e5\u65e5\u65e5\u672c\u672c\u8a9e"},
+		{input: "\U000065e52\U0000672c\U00008a9e2", expected: "\U000065e5\U000065e5\U0000672c\U00008a9e\U00008a9e"},
+		// backquoted strings
+		{input: `a2\n3\2a`, expected: `aa\nnn\\a`},
+		{input: testStr, expected: "test\n\n\nerrr\n\n  "},
+
 		// uncomment if task with asterisk completed
 		// {input: `qwe\4\5`, expected: `qwe45`},
 		// {input: `qwe\45`, expected: `qwe44444`},
@@ -36,7 +51,7 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackInvalidString(t *testing.T) {
-	invalidStrings := []string{"3abc", "45", "aaa10b"}
+	invalidStrings := []string{"3abc", "45", "aaa10b", "aa2tt34", "a3456T"}
 	for _, tc := range invalidStrings {
 		tc := tc
 		t.Run(tc, func(t *testing.T) {

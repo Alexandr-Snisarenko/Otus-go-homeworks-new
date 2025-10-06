@@ -1,3 +1,5 @@
-module github.com/fixme_my_friend/hw01_hello_otus
+module github.com/Alexandr-Snisarenko/otus-go-homeworks/hw01_hello_otus
 
-go 1.23
+go 1.19
+
+require golang.org/x/example/hello v0.0.0-20231013143937-1d6d2400d402 // indirect

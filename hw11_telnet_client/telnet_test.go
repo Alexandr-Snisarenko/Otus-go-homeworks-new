@@ -1,7 +1,8 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
+	"context"
 	"io"
 	"net"
 	"sync"
@@ -23,23 +24,36 @@ func TestTelnetClient(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			in := &bytes.Buffer{}
-			out := &bytes.Buffer{}
+			// для тестирования создаем потоковые данные через объекты io.pipe
+			inReader, inWriter := io.Pipe()
+			outReader, outWriter := io.Pipe()
+			errReader, errWriter := io.Pipe()
+
+			ctx := context.Background()
 
 			timeout, err := time.ParseDuration("10s")
 			require.NoError(t, err)
 
-			client := NewTelnetClient(l.Addr().String(), timeout, io.NopCloser(in), out)
-			require.NoError(t, client.Connect())
+			client := NewTelnetClient(l.Addr().String(), timeout, inReader, outWriter, errWriter)
+			require.NoError(t, client.Connect(ctx))
 			defer func() { require.NoError(t, client.Close()) }()
 
-			in.WriteString("hello\n")
-			err = client.Send()
+			_, err = inWriter.Write([]byte("hello\n"))
 			require.NoError(t, err)
 
-			err = client.Receive()
+			reader := bufio.NewReader(outReader)
+			s, err := reader.ReadString('\n')
 			require.NoError(t, err)
-			require.Equal(t, "world\n", out.String())
+			require.Equal(t, "world\n", s)
+
+			errOut := bufio.NewReader(errReader)
+			s, err = errOut.ReadString('\n')
+			require.NoError(t, err)
+			require.Equal(t, "EOF\n", s)
+
+			inWriter.Close()
+			outWriter.Close()
+			errReader.Close()
 		}()
 
 		go func() {

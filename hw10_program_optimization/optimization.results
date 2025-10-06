@@ -1,0 +1,38 @@
+
+1. before optimizing
+=== RUN   TestGetDomainStat_Time_And_Memory
+    stats_optimization_test.go:46: time used: 1.130248018s / 300ms
+    stats_optimization_test.go:47: memory used: 308Mb / 30Mb
+    assertion_compare.go:332: 
+                Error Trace:    stats_optimization_test.go:49
+                Error:          "1130248018" is not less than "300000000"
+                Test:           TestGetDomainStat_Time_And_Memory
+                Messages:       [the program is too slow]
+--- FAIL: TestGetDomainStat_Time_And_Memory (1.14s)
+
+alex@Ubuntu:~/GoProjects/otus-go-homeworks/hw10_program_optimization$ go test -bench . -benchmem -benchtime 20s
+goos: linux
+goarch: amd64
+pkg: github.com/Alexandr-Snisarenko/otus-go-homeworks/hw10_program_optimization
+cpu: 11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz
+BenchmarkGetUsers-4                 8575           2541920 ns/op            6296 B/op         66 allocs/op
+BenchmarkCountDomains-4              176         154150900 ns/op        136033770 B/op   1700023 allocs/op
+BenchmarkGetDomainStat-4             163         158277278 ns/op        136042482 B/op   1700076 allocs/op
+
+2. after optimizing
+
+=== RUN   TestGetDomainStat_Time_And_Memory
+    stats_optimization_test.go:46: time used: 118.832696ms / 300ms
+    stats_optimization_test.go:47: memory used: 21Mb / 30Mb
+--- PASS: TestGetDomainStat_Time_And_Memory (1.44s)
+PASS
+ok      github.com/Alexandr-Snisarenko/otus-go-homeworks/hw10_program_optimization      1.449s
+
+goos: linux
+goarch: amd64
+pkg: github.com/Alexandr-Snisarenko/otus-go-homeworks/hw10_program_optimization
+cpu: 11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz
+BenchmarkGetDomainStat-4   	  114189	      9484 ns/op	    7248 B/op	      59 allocs/op
+PASS
+ok  	github.com/Alexandr-Snisarenko/otus-go-homeworks/hw10_program_optimization	1.213s
+

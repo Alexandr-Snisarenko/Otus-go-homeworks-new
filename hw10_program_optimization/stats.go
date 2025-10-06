@@ -1,11 +1,12 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
-	"fmt"
+	"bufio"
+	"errors"
 	"io"
-	"regexp"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type User struct {
@@ -21,46 +22,48 @@ type User struct {
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %w", err)
-	}
-	return countDomains(u, domain)
-}
-
-type users [100_000]User
-
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return
-	}
-
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
-		}
-		result[i] = user
-	}
-	return
-}
-
-func countDomains(u users, domain string) (DomainStat, error) {
+	var user User
+	exit := false
 	result := make(DomainStat)
+	// псоздаем экземпляр bufio.Reader от интерфейса io.Reader
+	rder := bufio.NewReader(r)
 
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
+	for !exit {
+		// читаем строку из буфера rder
+		line, err := rder.ReadString('\n')
 		if err != nil {
+			// если ошибка == EOF ставим метку выхода и обрабатываем роследнюю строку
+			if errors.Is(err, io.EOF) {
+				exit = true
+			} else {
+				return nil, err
+			}
+		}
+
+		// если в строке нт подстроки с доменом - переходим к следующей строке
+		if !strings.Contains(line, "."+domain) {
+			continue
+		}
+
+		// заполняем объект user из json содержимого текущей строки
+		if err = jsoniter.Unmarshal([]byte(line), &user); err != nil {
 			return nil, err
 		}
 
+		// выделяем домен из email (предполагаем, что email - валидный)
+		_, userDomain, fnd := strings.Cut(strings.ToLower(user.Email), "@")
+		// если не нашли собачки (email пустой, например) - переходим к следующей строке
+		if !fnd {
+			continue
+		}
+
+		// проверяем относится ли домен пользователя к указанному домену первого уровня
+		_, matched := strings.CutSuffix(userDomain, "."+domain)
+		// если да - инкрементируем запись по домену в мапе
 		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
+			result[userDomain]++
 		}
 	}
+
 	return result, nil
 }
