@@ -1,0 +1,12 @@
+-- Role: cl_admin
+-- DROP ROLE IF EXISTS cl_admin;
+
+CREATE ROLE cl_admin WITH
+    LOGIN
+    NOSUPERUSER
+    INHERIT
+    NOCREATEDB
+    NOCREATEROLE
+    NOREPLICATION
+    NOBYPASSRLS
+    PASSWORD 'password';

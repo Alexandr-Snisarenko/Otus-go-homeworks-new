@@ -1,0 +1,5 @@
+
+GRANT CONNECT ON DATABASE calendar TO cl_admin;
+GRANT USAGE ON SCHEMA public TO cl_admin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO cl_admin;
+GRANT ALL ON SCHEMA public TO cl_admin;

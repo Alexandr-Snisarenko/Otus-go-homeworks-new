@@ -13,7 +13,7 @@ type Logger interface { // TODO
 type Application interface { // TODO
 }
 
-func NewServer(logger Logger, app Application) *Server {
+func NewServer(logger Logger, app Application) *Server { //nolint:revive
 	return &Server{}
 }
 
@@ -23,7 +23,7 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) Stop(ctx context.Context) error {
+func (s *Server) Stop(ctx context.Context) error { //nolint:revive
 	// TODO
 	return nil
 }

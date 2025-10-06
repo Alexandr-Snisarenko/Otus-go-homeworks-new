@@ -3,16 +3,22 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/Alexandr-Snisarenko/otus-go-homeworks/hw12_13_14_15_calendar/internal/app"
+	"github.com/Alexandr-Snisarenko/otus-go-homeworks/hw12_13_14_15_calendar/internal/config"
+	"github.com/Alexandr-Snisarenko/otus-go-homeworks/hw12_13_14_15_calendar/internal/logger"
+	httpsrv "github.com/Alexandr-Snisarenko/otus-go-homeworks/hw12_13_14_15_calendar/internal/server/http"
+	"github.com/Alexandr-Snisarenko/otus-go-homeworks/hw12_13_14_15_calendar/internal/storage"
+	"github.com/Alexandr-Snisarenko/otus-go-homeworks/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/Alexandr-Snisarenko/otus-go-homeworks/hw12_13_14_15_calendar/internal/storage/postgresql"
 )
+
+//  ./calendar --config=/path/to/config.yaml
 
 var configFile string
 
@@ -21,20 +27,46 @@ func init() {
 }
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "calendar exited with error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	var storage storage.EventStorage
+
 	flag.Parse()
 
 	if flag.Arg(0) == "version" {
 		printVersion()
-		return
+		return nil
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	cfg, err := config.LoadConfig(configFile)
+	if err != nil {
+		return fmt.Errorf("config load: %w", err)
+	}
 
-	storage := memorystorage.New()
+	logg := logger.New(&cfg.Logger)
+
+	switch cfg.Database.Workmode {
+	case "memory":
+		storage = memory.New()
+	case "postgresql":
+		if storage, err = postgresql.New(cfg.Database); err != nil {
+			logg.Error("Storage init error", "error", err)
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown database mode: %s", cfg.Database.Workmode)
+	}
+
+	defer storage.Close()
+
 	calendar := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, calendar)
+	server := httpsrv.NewServer(logg, calendar)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -56,6 +88,7 @@ func main() {
 	if err := server.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
 		cancel()
-		os.Exit(1) //nolint:gocritic
+		return err
 	}
+	return nil
 }
